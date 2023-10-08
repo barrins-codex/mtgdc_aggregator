@@ -27,11 +27,13 @@ def remove_numeric_suffix(string):
     cleaned_string = re.sub(r"\d+$", "", string)
     return cleaned_string.strip()
 
+
 def concatenate(decklist):
     """Fonction qui recrée une decklist style `X CARTE`."""
     tmp = Counter(decklist)
     tmp = sorted(tmp.items())
     return [f"{qty} {carte}" for carte, qty in tmp]
+
 
 class Aggregator:
     """Classe qui gère la logique d'aggrégation des decks."""
