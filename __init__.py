@@ -51,6 +51,8 @@ import re
 from collections import Counter, defaultdict
 from itertools import combinations
 
+from mtgdc_aggregator.utils import ProgressBar
+
 
 class Aggregator:
     """A class to aggregate data from Magic: The Gathering decks.
@@ -115,8 +117,11 @@ class Aggregator:
         Args:
             size (int): The target size for the aggregated card data.
         """
+        action = f"Order {self.ordre}"
+        progress_bar = ProgressBar(len(self.collective), size, action=action)
         while len(self.collective) > size:
             self._remove_lowest_ranked_card(size)
+            progress_bar.current_size(len(self.collective))
 
     def export(self, o_name: str = "mtgdc_aggregation.txt", **kwargs) -> None:
         """Aggregate the card data to a specified size by removing lowest ranked cards.
