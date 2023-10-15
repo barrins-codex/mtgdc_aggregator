@@ -118,14 +118,15 @@ class Aggregator:
         while len(self.collective) > size:
             self._remove_lowest_ranked_card(size)
 
-    def export(self, o_name: str = "mtgdc_aggregation.txt") -> None:
+    def export(self, o_name: str = "mtgdc_aggregation.txt", **kwargs) -> None:
         """Aggregate the card data to a specified size by removing lowest ranked cards.
 
         Args:
             size (int): The target size for the aggregated card data.
         """
+        title = kwargs.get("title", "Barrin's Data Aggregation")
         sortie = [
-            "===== Barrin's Data Aggregation =====",
+            f"===== {title} =====",
             f"Nb decks: {self.nb_decks}",
             f"Ordre {self.ordre}",
             f"Score: {self.robustesse:.4f}",
