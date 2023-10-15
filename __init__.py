@@ -123,6 +123,9 @@ class Aggregator:
 
         Args:
             size (int): The target size for the aggregated card data.
+
+        Keyword Args:
+            title (str): Title displayed in the output file.
         """
         title = kwargs.get("title", "Barrin's Data Aggregation")
         sortie = [
