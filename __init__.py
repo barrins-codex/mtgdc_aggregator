@@ -111,13 +111,16 @@ class Aggregator:
 
         self._initial_ranking_structure = self.ranking_structure.copy()
 
-    def aggregate(self, size: int = 100):
+    def aggregate(self, size: int = 100, **kwargs):
         """Aggregate the card data to a specified size by removing lowest ranked cards.
 
         Args:
             size (int): The target size for the aggregated card data.
+            **kwargs: Arguments supplémentaires pour personnaliser la barre de progression.
+                action (str, optional): La description de l'action en cours. Par défaut, "Ordre k".
+
         """
-        action = f"Order {self.ordre}"
+        action = kwargs.get("action", f"Order {self.ordre}")
         progress_bar = ProgressBar(len(self.collective), size, action=action)
         while len(self.collective) > size:
             self._remove_lowest_ranked_card(size)
