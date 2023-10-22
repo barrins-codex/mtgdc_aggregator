@@ -22,7 +22,7 @@ Méthodes:
     - export(o_name: str = "mtgdc_aggregation.txt") -> None:
         Exporte les données agrégées vers un fichier.
 
-    - _remove_lowest_ranked_card(size: int):
+    - _remove_cards():
         Supprime les cartes les moins bien classées des données collectives.
 
     - _calculate_ranks() -> dict:
@@ -58,16 +58,14 @@ class Aggregator:
     """A class to aggregate data from Magic: The Gathering decks.
 
     Attributes:
+        collective (set):
+            A Counter object storing card frequencies across all decks.
+        decklists (list):
+            The list of decklists provided for the aggregation.
         ordre (int):
             The order of combinations for ranking.
-        nb_decks (int):
-            The number of decks aggregated.
-        collective (Counter):
-            A Counter object storing card frequencies across all decks.
         ranking_structure (Counter):
             A Counter object storing combination frequencies.
-        _initial_ranking_structure (Counter):
-            A Counter object storing the initial combination frequencies.
 
     Methods:
         __init__(self, decks: list[str], **kwargs):
@@ -76,10 +74,10 @@ class Aggregator:
             Aggregates the card data to a specified size by removing lowest ranked cards.
         export(self, o_name: str = "mtgdc_aggregation.txt") -> None:
             Exports the aggregated data to a file.
-        _remove_lowest_ranked_card(self, size: int):
-            Removes the lowest ranked cards from the collective data.
         _calculate_ranks(self) -> dict:
             Calculates ranks for cards based on combination frequencies.
+        _remove_cards(self):
+            Removes the lowest ranked cards from the collective data.
         decklist(self) -> list:
             Generates a decklist based on the aggregated card data.
         robustesse(self):
@@ -94,36 +92,40 @@ class Aggregator:
             Concatenates card names with their quantities.
     """
 
-    def __init__(self, decks: list[str], ordre: int = 1):
-        self.ordre = ordre
+    def __init__(self, decklists: list[str], **kwargs) -> None:
+        self.ordre = kwargs.get("ordre", 1)
+        self.size = kwargs.get("size", 100)
 
-        self.nb_decks = 0
-        self.collective = Counter()
+        self.decklists = [
+            [f"{card} {i}" for qty, card in deck for i in range(int(qty))]
+            for deck in decklists
+        ]
+
         self.ranking_structure = Counter()
+        tmp_collective = Counter()
 
-        for deck in decks:
-            tmp = [f"{card} {i+1}" for qty, card in deck for i in range(int(qty))]
-            tmp_combinations = Aggregator.get_combinations(tmp, self.ordre)
+        for deck in self.decklists:
+            tmp = Aggregator.get_combinations(deck, self.ordre)
+            tmp_collective.update(deck)
+            self.ranking_structure.update(tmp)
 
-            self.nb_decks += 1
-            self.collective.update(tmp)
-            self.ranking_structure.update(tmp_combinations)
-
+        self.collective = set(tmp_collective.keys())
         self._initial_ranking_structure = self.ranking_structure.copy()
 
-    def aggregate(self, size: int = 100, **kwargs):
+    def aggregate(self, **kwargs):
         """Aggregate the card data to a specified size by removing lowest ranked cards.
 
         Args:
-            size (int): The target size for the aggregated card data.
             **kwargs: Arguments supplémentaires pour personnaliser la barre de progression.
                 action (str, optional): La description de l'action en cours. Par défaut, "Ordre k".
+                size (int, optional): The target size for the aggregated card data.
 
         """
+        self.size = kwargs.get("size", self.size)
         action = kwargs.get("action", f"Order {self.ordre}")
-        progress_bar = ProgressBar(len(self.collective), size, action=action)
-        while len(self.collective) > size:
-            self._remove_lowest_ranked_card(size)
+        progress_bar = ProgressBar(len(self.collective), self.size, action=action)
+        while len(self.collective) > self.size:
+            self._remove_cards()
             progress_bar.current_size(len(self.collective))
 
     def export(self, o_name: str = "mtgdc_aggregation.txt", **kwargs) -> None:
@@ -138,7 +140,7 @@ class Aggregator:
         title = kwargs.get("title", "Barrin's Data Aggregation")
         sortie = [
             f"===== {title} =====",
-            f"Nb decks: {self.nb_decks}",
+            f"Nb decks: {len(self.decklist)}",
             f"Ordre {self.ordre}",
             f"Score: {self.robustesse:.4f}",
             "----------",
@@ -147,18 +149,6 @@ class Aggregator:
         with open(o_name, "+w", encoding="utf-8") as file:
             file.write("\n".join(sortie + self.decklist))
 
-    def _remove_lowest_ranked_card(self, size: int):
-        """Aggregate the card data to a specified size by removing lowest ranked cards.
-
-        Args:
-            size (int): The target size for the aggregated card data.
-        """
-        ranks = self._calculate_ranks()
-        lowest_rank = min(ranks.keys())
-        for card in ranks[lowest_rank]:
-            if len(self.collective) > size:
-                del self.collective[card]
-
     def _calculate_ranks(self) -> dict:
         """Calculate ranks for cards based on combination frequencies.
 
@@ -166,16 +156,25 @@ class Aggregator:
             dict: A dictionary with card names as keys and their respective ranks as values.
         """
         ranks = defaultdict(float)
-        card_collective = set(self.collective.keys())
         updated_ranking = {}
         for combination, count in list(self.ranking_structure.items()):
-            if set(combination) <= card_collective:
+            if set(combination) <= self.collective:
+                updated_ranking[combination] = count
                 rank = count * (1 / (2 ** len(combination)))
                 for card in combination:
                     ranks[card] += rank
-                updated_ranking[combination] = count
         self.ranking_structure = updated_ranking
         return Aggregator.transpose_dict(dict(ranks))
+
+    def _remove_cards(self) -> None:
+        """Aggregate the card data to a specified size by removing lowest ranked cards."""
+        ranks = self._calculate_ranks()
+        lowest_rank = min(ranks.keys())
+        for card in ranks[lowest_rank]:
+            if len(self.collective) > self.size:
+                self.collective.remove(card)
+            else:
+                break
 
     @property
     def decklist(self) -> list:
@@ -185,7 +184,7 @@ class Aggregator:
             list: A list of strings representing the decklist.
         """
         return Aggregator.concatenate(
-            [Aggregator.remove_numeric_suffix(card) for card in self.collective.keys()]
+            [Aggregator.remove_numeric_suffix(card) for card in self.collective]
         )
 
     @property
@@ -211,6 +210,18 @@ class Aggregator:
         return score
 
     @staticmethod
+    def concatenate(decklist: list) -> list:
+        """Concatenate card names with their quantities.
+
+        Args:
+            decklist (list): A list of card names.
+
+        Returns:
+            list: A list of concatenated strings representing card names with quantities.
+        """
+        return [f"{qty} {carte}" for carte, qty in sorted(Counter(decklist).items())]
+
+    @staticmethod
     def get_combinations(lst: list, max_size: int) -> list:
         """Generate combinations from a list up to a specified maximum size.
 
@@ -221,22 +232,11 @@ class Aggregator:
         Returns:
             list: A list of combinations.
         """
-        return [comb for i in range(max_size) for comb in combinations(lst, i + 1)]
-
-    @staticmethod
-    def transpose_dict(input_dict: dict) -> dict:
-        """Transpose a dictionary, switching keys and values.
-
-        Args:
-            input_dict (dict): The input dictionary to transpose.
-
-        Returns:
-            dict: The transposed dictionary.
-        """
-        output_dict = defaultdict(list)
-        for key, value in input_dict.items():
-            output_dict[value].append(key)
-        return dict(output_dict)
+        return [
+            tuple(sorted(comb))
+            for i in range(max_size)
+            for comb in combinations(lst, i + 1)
+        ]
 
     @staticmethod
     def remove_numeric_suffix(string: str) -> str:
@@ -252,13 +252,16 @@ class Aggregator:
         return cleaned_string.strip()
 
     @staticmethod
-    def concatenate(decklist: list) -> list:
-        """Concatenate card names with their quantities.
+    def transpose_dict(input_dict: dict) -> dict:
+        """Transpose a dictionary, switching keys and values.
 
         Args:
-            decklist (list): A list of card names.
+            input_dict (dict): The input dictionary to transpose.
 
         Returns:
-            list: A list of concatenated strings representing card names with quantities.
+            dict: The transposed dictionary.
         """
-        return [f"{qty} {carte}" for carte, qty in sorted(Counter(decklist).items())]
+        output_dict = defaultdict(list)
+        for key, value in input_dict.items():
+            output_dict[value].append(key)
+        return dict(output_dict)
