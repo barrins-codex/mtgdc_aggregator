@@ -140,7 +140,7 @@ class Aggregator:
         title = kwargs.get("title", "Barrin's Data Aggregation")
         sortie = [
             f"===== {title} =====",
-            f"Nb decks: {len(self.decklist)}",
+            f"Nb decks: {len(self.decklists)}",
             f"Ordre {self.ordre}",
             f"Score: {self.robustesse:.4f}",
             "----------",
