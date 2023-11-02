@@ -52,6 +52,7 @@ from collections import Counter, defaultdict
 from itertools import combinations
 
 from mtgdc_aggregator.utils import ProgressBar
+from mtgdc_banlist.banlist_compiler import BanlistCompiler
 
 
 class Aggregator:
@@ -97,7 +98,12 @@ class Aggregator:
         self.size = kwargs.get("size", 100)
 
         self.decklists = [
-            [f"{card} {i}" for qty, card in deck for i in range(int(qty))]
+            [
+                f"{card} {i}"
+                for qty, card in deck
+                for i in range(int(qty))
+                if not BanlistCompiler().is_banned(card)
+            ]
             for deck in decklists
         ]
 
