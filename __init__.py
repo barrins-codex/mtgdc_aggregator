@@ -51,8 +51,9 @@ import re
 from collections import Counter, defaultdict
 from itertools import combinations
 
-from mtgdc_aggregator.utils import ProgressBar
 from mtgdc_banlist.banlist_compiler import BanlistCompiler
+
+from mtgdc_aggregator.utils import ProgressBar
 
 
 class Aggregator:
