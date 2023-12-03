@@ -1,1 +1,0 @@
-# mtgdc_aggregator
