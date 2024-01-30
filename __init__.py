@@ -3,6 +3,7 @@ Source:
     - Inspiration pour l'agrégation de données de decks Magic: The Gathering:
       https://elvishjerricco.github.io/2015/09/24/automatically-generating-magic-decks.html
 """
+
 import re
 from collections import Counter, defaultdict
 from itertools import combinations
