@@ -8,10 +8,10 @@ import re
 from collections import Counter, defaultdict
 from itertools import combinations
 
+from mtgdc_carddata import DecklistBuilder
 from tqdm import tqdm
 
 from mtgdc_banlist import BanlistCompiler
-from mtgdc_carddata import DecklistBuilder
 
 
 class Aggregator:
